@@ -1,20 +1,23 @@
 {
-  "extends": "expo/tsconfig.base",
+  "extends": "expo/tsconfig.base.json",
   "compilerOptions": {
     "strict": true,
+    "baseUrl": ".",
     "paths": {
-      "@/*": [
-        "./src/*"
-      ],
-      "@/assets/*": [
-        "./assets/*"
-      ]
+      "@/*": ["src/*"]
     }
   },
   "include": [
-    "**/*.ts",
-    "**/*.tsx",
-    ".expo/types/**/*.ts",
-    "expo-env.d.ts"
+    "src",
+    "App.tsx"
+  ],
+  "exclude": [
+    "src/app",
+    "src/components/animated-icon*",
+    "src/components/app-tabs*",
+    "src/components/external-link*",
+    "src/components/ui",
+    "src/components/web-badge*",
+    "src/hooks"
   ]
 }
