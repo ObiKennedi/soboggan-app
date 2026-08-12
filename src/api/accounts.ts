@@ -15,3 +15,12 @@ export async function createAccount(type: AccountType, currency = 'NGN') {
   const { data } = await apiClient.post<Account>('/accounts', { type, currency });
   return data;
 }
+
+export async function withdrawFromAccount(accountId: string, amount: number, description?: string) {
+  const { data } = await apiClient.post(`/accounts/${accountId}/transactions`, {
+    type: 'WITHDRAWAL',
+    amount,
+    description: description || 'Account withdrawal',
+  });
+  return data;
+}

@@ -5,6 +5,7 @@ import { AccountsStack } from './AccountsStack';
 import { PortfolioStack } from './PortfolioStack';
 import { InvestmentsStack } from './InvestmentsStack';
 import { ActivityLogScreen } from '../screens/activity/ActivityLogScreen';
+import { ProfileStack } from './ProfileStack';
 import { colors } from '../theme/theme';
 
 const Tab = createBottomTabNavigator();
@@ -17,14 +18,13 @@ export function AppTabs() {
         tabBarActiveTintColor: colors.navy,
         tabBarInactiveTintColor: colors.gray,
         tabBarIcon: ({ color, size }) => {
-          const icon =
-            route.name === 'Accounts'
-              ? 'wallet-outline'
-              : route.name === 'Portfolio'
-              ? 'pie-chart-outline'
-              : route.name === 'Investments'
-              ? 'trending-up-outline'
-              : 'list-outline';
+          let icon = 'ellipse-outline';
+          if (route.name === 'Accounts') icon = 'wallet-outline';
+          else if (route.name === 'Portfolio') icon = 'pie-chart-outline';
+          else if (route.name === 'Investments') icon = 'trending-up-outline';
+          else if (route.name === 'Activity') icon = 'list-outline';
+          else if (route.name === 'Profile') icon = 'person-outline';
+
           return <Ionicons name={icon as any} size={size} color={color} />;
         },
       })}
@@ -33,6 +33,7 @@ export function AppTabs() {
       <Tab.Screen name="Portfolio" component={PortfolioStack} />
       <Tab.Screen name="Investments" component={InvestmentsStack} />
       <Tab.Screen name="Activity" component={ActivityLogScreen} options={{ headerShown: true, title: 'Activity Log' }} />
+      <Tab.Screen name="Profile" component={ProfileStack} />
     </Tab.Navigator>
   );
 }

@@ -1,5 +1,21 @@
 import { apiClient } from './client';
-import { InvestmentLogEntry, InvestmentOverview, SellInstruction } from '../types';
+import { InvestmentLogEntry, InvestmentOverview, SellInstruction, StockQuote, BuyInstruction } from '../types';
+
+export async function fetchAvailableStocks() {
+  const { data } = await apiClient.get<StockQuote[]>('/investments/stocks');
+  return data;
+}
+
+export async function createBuyInstruction(payload: {
+  stockSymbol: string;
+  stockName: string;
+  unitPrice: number;
+  quantity: number;
+  notes?: string;
+}) {
+  const { data } = await apiClient.post<BuyInstruction>('/investments/buy-instructions', payload);
+  return data;
+}
 
 export async function fetchInvestmentOverview() {
   const { data } = await apiClient.get<InvestmentOverview>('/investments/overview');

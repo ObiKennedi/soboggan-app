@@ -129,6 +129,33 @@ export interface User {
 
 export type SellInstructionStatus = 'PENDING' | 'IN_REVIEW' | 'EXECUTED' | 'REJECTED' | 'CANCELLED';
 
+export type BuyInstructionStatus = 'PENDING' | 'IN_REVIEW' | 'EXECUTED' | 'REJECTED' | 'CANCELLED';
+
+export interface StockQuote {
+  symbol: string;
+  name: string;
+  price: number;
+  change: number;
+  changePercent: string;
+  currency: string;
+  volume?: string;
+}
+
+export interface BuyInstruction {
+  id: string;
+  userId: string;
+  stockSymbol: string;
+  stockName: string;
+  unitPrice: string | number;
+  quantity: number;
+  totalCost: string | number;
+  notes?: string | null;
+  status: BuyInstructionStatus;
+  adminNotes?: string | null;
+  createdAt: string;
+  updatedAt?: string;
+}
+
 export interface SellInstruction {
   id: string;
   userId: string;
@@ -145,7 +172,7 @@ export interface SellInstruction {
 
 export interface InvestmentLogEntry {
   id: string;
-  type: 'TRANSACTION' | 'SELL_INSTRUCTION';
+  type: 'TRANSACTION' | 'SELL_INSTRUCTION' | 'BUY_INSTRUCTION';
   title: string;
   description: string;
   amount?: number | null;
@@ -171,5 +198,6 @@ export interface InvestmentOverview {
     unrealizedPnL: number;
   }>;
 }
+
 
 

@@ -40,7 +40,7 @@
       "expo-font"
     ],
     "extra": {
-      "apiBaseUrl": "http://10.227.222.149:4000/api/v1",
+      "apiBaseUrl": "https://soboggan-api.vercel.app/api/v1",
       "googleWebClientId": "1073775630601-svklvrn1s5aamdsirel55k994gh72cme.apps.googleusercontent.com",
       "pusherKey": "d4bd70c0d2e23cf78ac1",
       "pusherCluster": "eu"
