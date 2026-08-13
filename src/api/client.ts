@@ -4,7 +4,7 @@ import { getToken, clearToken } from '../auth/tokenStorage';
 
 const API_BASE_URL =
   (Constants.expoConfig?.extra?.apiBaseUrl as string | undefined) ??
-  'http://localhost:4000/api/v1';
+  'https://soboggan-api.vercel.app/api/v1';
 
 export const apiClient = axios.create({
   baseURL: API_BASE_URL,
