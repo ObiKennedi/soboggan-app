@@ -37,7 +37,8 @@
           "iosUrlScheme": "com.googleusercontent.apps.YOUR_IOS_CLIENT_ID"
         }
       ],
-      "expo-font"
+      "expo-font",
+      "expo-notifications"
     ],
     "extra": {
       "apiBaseUrl": "https://soboggan-api.vercel.app/api/v1",

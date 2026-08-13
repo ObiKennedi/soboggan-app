@@ -26,6 +26,7 @@ import {
   InvestmentOverview,
   InvestmentLogEntry,
   SellInstruction,
+  AssetCategory,
 } from '../../types';
 import { Card } from '../../components/Card';
 import { Button } from '../../components/Button';
@@ -146,11 +147,15 @@ export function PortfolioDetailScreen({ route, navigation }: Props) {
     symbol: h.asset.symbol,
     name: h.asset.name,
     assetType: h.asset.type,
+    assetCategory: 'STOCK' as AssetCategory,
     quantity: Number(h.quantity),
     averageCost: Number(h.averageCost),
     currentPrice: Number(h.asset.currentPrice),
+    priceUSD: null,
+    isLivePrice: false,
     marketValue: h.marketValue,
     unrealizedPnL: h.unrealizedPnL,
+    listingId: null,
   })) : []);
 
   return (
@@ -229,11 +234,22 @@ export function PortfolioDetailScreen({ route, navigation }: Props) {
             <Card style={styles.holdingCard}>
               <View style={styles.holdingRow}>
                 <View style={{ flex: 1 }}>
-                  <Text style={typography.h3}>{item.symbol}</Text>
+                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                    <Text style={typography.h3}>{item.symbol}</Text>
+                    <AssetCategoryBadge category={item.assetCategory ?? 'STOCK'} />
+                    {item.isLivePrice && (
+                      <View style={styles.liveDot} />
+                    )}
+                  </View>
                   <Text style={typography.caption}>{item.name}</Text>
                   <Text style={[typography.caption, { color: colors.navy, fontWeight: '600', marginTop: 2 }]}>
                     {item.quantity} units owned
                   </Text>
+                  {item.priceUSD != null && (
+                    <Text style={[typography.caption, { color: colors.textSecondary, fontSize: 11 }]}>
+                      ${item.priceUSD.toLocaleString('en-US', { maximumFractionDigits: 2 })} USD
+                    </Text>
+                  )}
                 </View>
                 <View style={{ alignItems: 'flex-end' }}>
                   <Text style={typography.body}>{formatCurrency(item.marketValue, 'NGN')}</Text>
@@ -388,8 +404,24 @@ export function PortfolioDetailScreen({ route, navigation }: Props) {
   );
 }
 
+const ASSET_CATEGORY_STYLES: Record<string, { label: string; bg: string; color: string }> = {
+  STOCK: { label: '📈 Stock', bg: '#eff6ff', color: '#3b82f6' },
+  CRYPTO: { label: '🪙 Crypto', bg: '#fffbeb', color: '#d97706' },
+  REAL_ESTATE: { label: '🏠 Property', bg: '#ecfdf5', color: '#059669' },
+};
+
+function AssetCategoryBadge({ category }: { category: string }) {
+  const cfg = ASSET_CATEGORY_STYLES[category] ?? ASSET_CATEGORY_STYLES.STOCK;
+  return (
+    <View style={{ backgroundColor: cfg.bg, paddingHorizontal: 6, paddingVertical: 2, borderRadius: 6 }}>
+      <Text style={{ fontSize: 10, fontWeight: '700', color: cfg.color }}>{cfg.label}</Text>
+    </View>
+  );
+}
+
 function LogCard({ log }: { log: InvestmentLogEntry }) {
   const isInstruction = log.type === 'SELL_INSTRUCTION' || log.type === 'BUY_INSTRUCTION';
+
 
   return (
     <Card style={styles.cardItem}>
@@ -585,6 +617,12 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     fontSize: 13,
     marginLeft: 6,
+  },
+  liveDot: {
+    width: 7,
+    height: 7,
+    borderRadius: 4,
+    backgroundColor: '#22c55e',
   },
 
   cardItem: {

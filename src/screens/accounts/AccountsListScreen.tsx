@@ -16,13 +16,14 @@ import { useFocusEffect } from '@react-navigation/native';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { Ionicons } from '@expo/vector-icons';
 import { AccountsStackParamList } from '../../navigation/AccountsStack';
-import { fetchAccounts } from '../../api/accounts';
+import { fetchAccounts, createAccount } from '../../api/accounts';
 import { fetchAvailableStocks, createBuyInstruction } from '../../api/investments';
 import { Account, StockQuote } from '../../types';
 import { Card } from '../../components/Card';
 import { Button } from '../../components/Button';
 import { formatCurrency } from '../../components/formatCurrency';
 import { useNotifications } from '../../realtime/useNotifications';
+import { NotificationsModal } from '../../components/NotificationsModal';
 import { colors, spacing, typography } from '../../theme/theme';
 
 type Props = NativeStackScreenProps<AccountsStackParamList, 'AccountsList'>;
@@ -39,6 +40,7 @@ export function AccountsListScreen({ navigation }: Props) {
   const [stocks, setStocks] = useState<StockQuote[]>([]);
   const [loading, setLoading] = useState(true);
   const { unreadCount } = useNotifications();
+  const [showNotificationsModal, setShowNotificationsModal] = useState(false);
 
   // Buy Stock Modal State
   const [selectedStock, setSelectedStock] = useState<StockQuote | null>(null);
@@ -69,7 +71,7 @@ export function AccountsListScreen({ navigation }: Props) {
   React.useLayoutEffect(() => {
     navigation.setOptions({
       headerRight: () => (
-        <Pressable onPress={() => navigation.navigate('Notifications')} style={{ marginRight: spacing.sm }}>
+        <Pressable onPress={() => setShowNotificationsModal(true)} style={{ marginRight: spacing.sm }}>
           <View>
             <Ionicons name="notifications-outline" size={22} color={colors.white} />
             {unreadCount > 0 && <View style={styles.badge} />}
@@ -82,9 +84,29 @@ export function AccountsListScreen({ navigation }: Props) {
   const totalBalance = accounts.reduce((sum, a) => sum + parseFloat(a.balance), 0);
   const primaryAccountId = accounts[0]?.id || '';
 
+  const handleCreateAccount = async (type: 'SAVINGS' | 'INVESTMENT' = 'SAVINGS') => {
+    try {
+      setLoading(true);
+      const newAcc = await createAccount(type);
+      Alert.alert('Account Created', `Your new ${type.toLowerCase()} account (•••• ${newAcc.accountNumber.slice(-4)}) has been created!`);
+      await load();
+    } catch (err: any) {
+      Alert.alert('Account Creation Error', err?.response?.data?.message || 'Could not create account.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const handleFund = () => {
     if (!primaryAccountId) {
-      Alert.alert('No Account Found', 'Please set up an account first.');
+      Alert.alert(
+        'No Account Found',
+        'You have not created a financial account yet. Would you like to create a Savings Account now?',
+        [
+          { text: 'Cancel', style: 'cancel' },
+          { text: 'Create Account', onPress: () => handleCreateAccount('SAVINGS') },
+        ],
+      );
       return;
     }
     navigation.navigate('FundAccount', { accountId: primaryAccountId });
@@ -92,7 +114,14 @@ export function AccountsListScreen({ navigation }: Props) {
 
   const handleWithdraw = () => {
     if (!primaryAccountId) {
-      Alert.alert('No Account Found', 'Please set up an account first.');
+      Alert.alert(
+        'No Account Found',
+        'You have not created a financial account yet. Would you like to create a Savings Account now?',
+        [
+          { text: 'Cancel', style: 'cancel' },
+          { text: 'Create Account', onPress: () => handleCreateAccount('SAVINGS') },
+        ],
+      );
       return;
     }
     navigation.navigate('WithdrawAccount', { accountId: primaryAccountId });
@@ -115,6 +144,7 @@ export function AccountsListScreen({ navigation }: Props) {
     setSubmittingBuy(true);
     try {
       await createBuyInstruction({
+        assetCategory: 'STOCK',
         stockSymbol: selectedStock.symbol,
         stockName: selectedStock.name,
         unitPrice: selectedStock.price,
@@ -213,8 +243,12 @@ export function AccountsListScreen({ navigation }: Props) {
         </ScrollView>
 
         {/* User Accounts Section */}
-        <View style={[styles.sectionHeader, { marginTop: spacing.md }]}>
+        <View style={[styles.sectionHeader, { marginTop: spacing.md, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }]}>
           <Text style={typography.h3}>Your Accounts</Text>
+          <TouchableOpacity onPress={() => handleCreateAccount('SAVINGS')} style={{ flexDirection: 'row', alignItems: 'center' }}>
+            <Ionicons name="add-circle-outline" size={18} color={colors.navy} style={{ marginRight: 4 }} />
+            <Text style={{ color: colors.navy, fontWeight: '700', fontSize: 13 }}>+ Open Account</Text>
+          </TouchableOpacity>
         </View>
 
         <View style={{ paddingHorizontal: spacing.md }}>
@@ -238,9 +272,14 @@ export function AccountsListScreen({ navigation }: Props) {
           ))}
 
           {accounts.length === 0 && !loading && (
-            <Text style={[typography.bodyMuted, { textAlign: 'center', marginTop: spacing.md }]}>
-              No accounts available.
-            </Text>
+            <Card style={{ alignItems: 'center', padding: spacing.lg }}>
+              <Ionicons name="wallet-outline" size={40} color={colors.gray} style={{ marginBottom: spacing.xs }} />
+              <Text style={[typography.h3, { textAlign: 'center' }]}>No Financial Account Yet</Text>
+              <Text style={[typography.bodyMuted, { textAlign: 'center', marginTop: 4, marginBottom: spacing.md }]}>
+                To deposit funds or trade assets, you need an active Savings or Investment account.
+              </Text>
+              <Button title="+ Create Savings Account Now" onPress={() => handleCreateAccount('SAVINGS')} />
+            </Card>
           )}
         </View>
       </ScrollView>
@@ -309,6 +348,11 @@ export function AccountsListScreen({ navigation }: Props) {
           </View>
         </Modal>
       )}
+      {/* Notifications Modal */}
+      <NotificationsModal
+        visible={showNotificationsModal}
+        onClose={() => setShowNotificationsModal(false)}
+      />
     </View>
   );
 }

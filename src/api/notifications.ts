@@ -17,6 +17,14 @@ export async function markAllNotificationsRead() {
   await apiClient.patch('/notifications/read-all');
 }
 
+export async function registerPushToken(pushToken: string, platform?: string) {
+  const { data } = await apiClient.patch('/notifications/push-token', {
+    pushToken,
+    platform,
+  });
+  return data;
+}
+
 /** Called by the Pusher client's authorizer — not used directly by screens. */
 export async function authorizePusherChannel(socketId: string, channelName: string) {
   const { data } = await apiClient.post('/notifications/pusher/auth', {

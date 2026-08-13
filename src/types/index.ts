@@ -128,8 +128,8 @@ export interface User {
 }
 
 export type SellInstructionStatus = 'PENDING' | 'IN_REVIEW' | 'EXECUTED' | 'REJECTED' | 'CANCELLED';
-
 export type BuyInstructionStatus = 'PENDING' | 'IN_REVIEW' | 'EXECUTED' | 'REJECTED' | 'CANCELLED';
+export type AssetCategory = 'STOCK' | 'CRYPTO' | 'REAL_ESTATE';
 
 export interface StockQuote {
   symbol: string;
@@ -141,17 +141,42 @@ export interface StockQuote {
   volume?: string;
 }
 
+export interface CryptoQuote {
+  symbol: string;
+  name: string;
+  pair: string;
+  priceUSD: number;
+  priceNGN: number;
+  currency: string;
+  isLive: boolean;
+}
+
+export interface RealEstateListing {
+  id: string;
+  title: string;
+  location: string;
+  description?: string | null;
+  pricePerUnit: string | number;
+  totalUnits: string | number;
+  imageUrl?: string | null;
+  status: 'ACTIVE' | 'SOLD' | 'ARCHIVED';
+  createdAt: string;
+}
+
 export interface BuyInstruction {
   id: string;
   userId: string;
+  assetCategory: AssetCategory;
   stockSymbol: string;
   stockName: string;
   unitPrice: string | number;
-  quantity: number;
+  quantity: string | number;
   totalCost: string | number;
   notes?: string | null;
   status: BuyInstructionStatus;
   adminNotes?: string | null;
+  listingId?: string | null;
+  listing?: RealEstateListing | null;
   createdAt: string;
   updatedAt?: string;
 }
@@ -182,22 +207,25 @@ export interface InvestmentLogEntry {
   meta?: Record<string, any>;
 }
 
+export interface PortfolioHolding {
+  id: string;
+  symbol: string;
+  name: string;
+  assetType: string;
+  assetCategory: AssetCategory;
+  quantity: number;
+  averageCost: number;
+  currentPrice: number;
+  priceUSD?: number | null;
+  isLivePrice: boolean;
+  marketValue: number;
+  unrealizedPnL: number;
+  listingId?: string | null;
+}
+
 export interface InvestmentOverview {
   totalValue: number;
   totalHoldingsCount: number;
   activeInstructionsCount: number;
-  holdings: Array<{
-    id: string;
-    symbol: string;
-    name: string;
-    assetType: string;
-    quantity: number;
-    averageCost: number;
-    currentPrice: number;
-    marketValue: number;
-    unrealizedPnL: number;
-  }>;
+  holdings: PortfolioHolding[];
 }
-
-
-
