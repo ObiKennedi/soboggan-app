@@ -14,17 +14,25 @@ const Stack = createNativeStackNavigator<AuthStackParamList>();
 
 export function AuthStack() {
   const { user } = useAuth();
-  const needsVerification = user && user.emailVerified === false;
+  const needsVerification = Boolean(user && user.emailVerified === false);
 
   return (
-    <Stack.Navigator
-      initialRouteName={needsVerification ? 'VerifyEmail' : 'Login'}
-      screenOptions={{ headerShown: false }}
-    >
-      <Stack.Screen name="Login" component={LoginScreen} />
-      <Stack.Screen name="VerifyEmail" component={VerifyEmailScreen} />
+    <Stack.Navigator screenOptions={{ headerShown: false }}>
+      {needsVerification ? (
+        <Stack.Screen
+          name="VerifyEmail"
+          component={VerifyEmailScreen}
+          initialParams={{ email: user?.email }}
+        />
+      ) : (
+        <>
+          <Stack.Screen name="Login" component={LoginScreen} />
+          <Stack.Screen name="VerifyEmail" component={VerifyEmailScreen} />
+        </>
+      )}
     </Stack.Navigator>
   );
 }
+
 
 

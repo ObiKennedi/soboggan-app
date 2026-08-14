@@ -10,12 +10,18 @@ import {
   Pressable,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { useNavigation } from '@react-navigation/native';
+import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useAuth } from '../../auth/AuthContext';
 import { Button } from '../../components/Button';
 import { Input } from '../../components/TextInput';
 import { colors, radii, spacing, typography } from '../../theme/theme';
+import { AuthStackParamList } from '../../navigation/AuthStack';
+
+type NavigationProp = NativeStackNavigationProp<AuthStackParamList, 'Login'>;
 
 export function LoginScreen() {
+  const navigation = useNavigation<NavigationProp>();
   const { loginWithGoogle, loginWithCredentials, registerWithCredentials } = useAuth();
 
   const [isSignUp, setIsSignUp] = useState(false);
@@ -43,15 +49,22 @@ export function LoginScreen() {
     setLoading(true);
     try {
       if (isSignUp) {
-        await registerWithCredentials({
+        const res = await registerWithCredentials({
           email: email.trim(),
           password,
           firstName: firstName.trim(),
           lastName: lastName.trim(),
           phone: phone.trim() || undefined,
         });
+
+        if (res?.user && res.user.emailVerified === false) {
+          navigation.navigate('VerifyEmail', { email: res.user.email });
+        }
       } else {
-        await loginWithCredentials(email.trim(), password);
+        const res = await loginWithCredentials(email.trim(), password);
+        if (res?.user && res.user.emailVerified === false) {
+          navigation.navigate('VerifyEmail', { email: res.user.email });
+        }
       }
     } catch (err: any) {
       const msg = err?.response?.data?.message ?? err?.message ?? 'An error occurred. Please try again.';
