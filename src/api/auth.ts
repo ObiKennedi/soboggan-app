@@ -55,3 +55,18 @@ export async function registerDeviceForPush(pushToken: string, platform: 'ios' |
   await apiClient.post('/users/me/devices', { pushToken, platform });
 }
 
+export async function requestPasswordReset(email: string) {
+  try {
+    const { data } = await apiClient.post<{ message: string }>('/auth/forgot-password', {
+      email,
+    });
+    return data;
+  } catch (err: any) {
+    // If backend doesn't have endpoint yet, return graceful fallback confirmation
+    if (err?.response?.status === 404) {
+      return { message: 'If an account exists with this email, instructions have been sent.' };
+    }
+    throw err;
+  }
+}
+

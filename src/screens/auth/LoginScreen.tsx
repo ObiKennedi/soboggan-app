@@ -177,6 +177,17 @@ export function LoginScreen() {
               autoCapitalize="none"
             />
 
+            {!isSignUp && (
+              <View style={styles.forgotContainer}>
+                <Pressable
+                  onPress={() => navigation.navigate('ForgotPassword', { email: email.trim() })}
+                  hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                >
+                  <Text style={styles.forgotText}>Forgot Password?</Text>
+                </Pressable>
+              </View>
+            )}
+
             <Button
               title={isSignUp ? 'Create Account' : 'Sign In'}
               onPress={handleCredentialAuth}
@@ -263,6 +274,16 @@ const styles = StyleSheet.create({
   actionBtn: {
     marginTop: spacing.xs,
     marginBottom: spacing.md,
+  },
+  forgotContainer: {
+    alignItems: 'flex-end',
+    marginTop: -spacing.xs,
+    marginBottom: spacing.md,
+  },
+  forgotText: {
+    ...typography.caption,
+    color: colors.navy,
+    fontWeight: '600',
   },
 
   dividerRow: {
