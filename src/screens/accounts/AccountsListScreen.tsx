@@ -11,6 +11,8 @@ import {
   TextInput,
   Alert,
   TouchableOpacity,
+  Image,
+  Platform,
 } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
@@ -18,7 +20,8 @@ import { Ionicons } from '@expo/vector-icons';
 import { AccountsStackParamList } from '../../navigation/AccountsStack';
 import { fetchAccounts, createAccount } from '../../api/accounts';
 import { fetchAvailableStocks, createBuyInstruction } from '../../api/investments';
-import { Account, StockQuote } from '../../types';
+import { fetchLatestBlogPosts } from '../../api/blog';
+import { Account, StockQuote, BlogPost } from '../../types';
 import { Card } from '../../components/Card';
 import { Button } from '../../components/Button';
 import { formatCurrency } from '../../components/formatCurrency';
@@ -38,6 +41,8 @@ const ACCOUNT_TYPE_LABEL: Record<string, string> = {
 export function AccountsListScreen({ navigation }: Props) {
   const [accounts, setAccounts] = useState<Account[]>([]);
   const [stocks, setStocks] = useState<StockQuote[]>([]);
+  const [blogPosts, setBlogPosts] = useState<BlogPost[]>([]);
+  const [selectedPostForReading, setSelectedPostForReading] = useState<BlogPost | null>(null);
   const [loading, setLoading] = useState(true);
   const { unreadCount } = useNotifications();
   const [showNotificationsModal, setShowNotificationsModal] = useState(false);
@@ -51,12 +56,14 @@ export function AccountsListScreen({ navigation }: Props) {
   const load = useCallback(async () => {
     setLoading(true);
     try {
-      const [accs, stks] = await Promise.all([
+      const [accs, stks, posts] = await Promise.all([
         fetchAccounts().catch(() => []),
         fetchAvailableStocks().catch(() => []),
+        fetchLatestBlogPosts(6).catch(() => []),
       ]);
       setAccounts(accs);
       setStocks(stks);
+      setBlogPosts(posts);
     } finally {
       setLoading(false);
     }
@@ -282,7 +289,122 @@ export function AccountsListScreen({ navigation }: Props) {
             </Card>
           )}
         </View>
+
+        {/* ─── Market Insights & Post Suggestions Banner (Immediately Below Accounts) ─── */}
+        {blogPosts.length > 0 && (
+          <View style={{ marginTop: spacing.lg }}>
+            <View style={styles.sectionHeader}>
+              <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                <Ionicons name="newspaper-outline" size={20} color={colors.navy} style={{ marginRight: 6 }} />
+                <Text style={typography.h3}>Market Insights & Research</Text>
+              </View>
+              <View style={[styles.liveApiBadge, { backgroundColor: 'rgba(201, 162, 39, 0.15)' }]}>
+                <Text style={[styles.liveApiText, { color: colors.gold }]}>INTELLIGENCE</Text>
+              </View>
+            </View>
+
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              contentContainerStyle={{ paddingHorizontal: spacing.md, paddingBottom: spacing.sm }}
+            >
+              {blogPosts.map((post) => (
+                <TouchableOpacity
+                  key={post.id}
+                  style={styles.blogBannerCard}
+                  onPress={() => setSelectedPostForReading(post)}
+                  activeOpacity={0.88}
+                >
+                  {post.coverImageUrl ? (
+                    <Image source={{ uri: post.coverImageUrl }} style={styles.blogBannerImage} />
+                  ) : (
+                    <View style={styles.blogBannerFallbackImage}>
+                      <Ionicons name="book-outline" size={28} color={colors.gold} />
+                    </View>
+                  )}
+                  <View style={styles.blogBannerContent}>
+                    <View style={styles.blogBannerCategoryRow}>
+                      <Text style={styles.blogBannerCategory}>{post.category}</Text>
+                      <Text style={styles.blogBannerReadTime}>⏱ {post.readTime} min</Text>
+                    </View>
+                    <Text style={styles.blogBannerTitle} numberOfLines={2}>
+                      {post.title}
+                    </Text>
+                    <Text style={styles.blogBannerExcerpt} numberOfLines={2}>
+                      {post.excerpt}
+                    </Text>
+                    <View style={styles.blogBannerFooter}>
+                      <Text style={styles.blogBannerAuthor} numberOfLines={1}>
+                        {post.authorName}
+                      </Text>
+                      <Text style={styles.blogBannerCta}>Read Article →</Text>
+                    </View>
+                  </View>
+                </TouchableOpacity>
+              ))}
+            </ScrollView>
+          </View>
+        )}
       </ScrollView>
+
+      {/* Full Article Reader Modal */}
+      {selectedPostForReading && (
+        <Modal
+          animationType="slide"
+          visible={!!selectedPostForReading}
+          onRequestClose={() => setSelectedPostForReading(null)}
+        >
+          <View style={styles.readerContainer}>
+            <View style={styles.readerHeader}>
+              <TouchableOpacity onPress={() => setSelectedPostForReading(null)} style={styles.readerBackBtn}>
+                <Ionicons name="arrow-back" size={24} color={colors.navy} />
+              </TouchableOpacity>
+              <Text style={styles.readerHeaderTitle} numberOfLines={1}>
+                {selectedPostForReading.category}
+              </Text>
+              <TouchableOpacity onPress={() => Alert.alert('Share', 'Link copied to clipboard!')}>
+                <Ionicons name="share-social-outline" size={22} color={colors.navy} />
+              </TouchableOpacity>
+            </View>
+
+            <ScrollView contentContainerStyle={styles.readerScroll} showsVerticalScrollIndicator={false}>
+              {selectedPostForReading.coverImageUrl && (
+                <Image source={{ uri: selectedPostForReading.coverImageUrl }} style={styles.readerCoverImage} />
+              )}
+
+              <View style={styles.readerBody}>
+                <View style={styles.readerMetaRow}>
+                  <Text style={styles.readerBadge}>{selectedPostForReading.category}</Text>
+                  <Text style={styles.readerMetaText}>⏱ {selectedPostForReading.readTime} min read</Text>
+                </View>
+
+                <Text style={styles.readerTitle}>{selectedPostForReading.title}</Text>
+
+                <View style={styles.readerAuthorRow}>
+                  <Ionicons name="person-circle-outline" size={20} color={colors.gold} />
+                  <Text style={styles.readerAuthorName}>{selectedPostForReading.authorName}</Text>
+                  <Text style={styles.readerDate}>
+                    • {new Date(selectedPostForReading.publishedAt || selectedPostForReading.createdAt).toLocaleDateString()}
+                  </Text>
+                </View>
+
+                <Text style={styles.readerExcerpt}>{selectedPostForReading.excerpt}</Text>
+
+                <View style={styles.readerDivider} />
+
+                <Text style={styles.readerContentText}>{selectedPostForReading.content}</Text>
+
+                <View style={styles.readerDisclaimerBox}>
+                  <Ionicons name="shield-checkmark" size={24} color={colors.gold} style={{ marginRight: 10 }} />
+                  <Text style={styles.readerDisclaimerText}>
+                    Soboggan Research Desk. This article is provided for educational and capital allocation guidance.
+                  </Text>
+                </View>
+              </View>
+            </ScrollView>
+          </View>
+        </Modal>
+      )}
 
       {/* Instruct Admin to Buy Stock Modal */}
       {selectedStock && (
@@ -601,5 +723,200 @@ const styles = StyleSheet.create({
   submitBtnText: {
     color: colors.gold,
     fontWeight: '700',
+  },
+
+  /* Blog Post Suggestion Banners */
+  blogBannerCard: {
+    width: 260,
+    backgroundColor: colors.white,
+    borderRadius: 16,
+    marginRight: spacing.md,
+    overflow: 'hidden',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.06,
+    shadowRadius: 8,
+    elevation: 3,
+    borderWidth: 1,
+    borderColor: 'rgba(0,0,0,0.04)',
+  },
+  blogBannerImage: {
+    width: '100%',
+    height: 120,
+    backgroundColor: colors.offWhite,
+  },
+  blogBannerFallbackImage: {
+    width: '100%',
+    height: 120,
+    backgroundColor: colors.navy,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  blogBannerContent: {
+    padding: spacing.md,
+  },
+  blogBannerCategoryRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 6,
+  },
+  blogBannerCategory: {
+    fontSize: 10,
+    fontWeight: '700',
+    color: colors.gold,
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+  },
+  blogBannerReadTime: {
+    fontSize: 11,
+    color: colors.gray,
+  },
+  blogBannerTitle: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: colors.navy,
+    lineHeight: 18,
+    marginBottom: 6,
+  },
+  blogBannerExcerpt: {
+    fontSize: 12,
+    color: colors.textSecondary,
+    lineHeight: 16,
+    marginBottom: 12,
+  },
+  blogBannerFooter: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingTop: 8,
+    borderTopWidth: 1,
+    borderTopColor: colors.border,
+  },
+  blogBannerAuthor: {
+    fontSize: 11,
+    color: colors.gray,
+    flex: 1,
+    marginRight: 6,
+  },
+  blogBannerCta: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: colors.navy,
+  },
+
+  /* Article Reader Modal */
+  readerContainer: {
+    flex: 1,
+    backgroundColor: colors.white,
+  },
+  readerHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.md,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.border,
+    paddingTop: Platform.OS === 'ios' ? 44 : spacing.md,
+  },
+  readerBackBtn: {
+    padding: 4,
+  },
+  readerHeaderTitle: {
+    fontSize: 15,
+    fontWeight: '700',
+    color: colors.navy,
+    maxWidth: '70%',
+  },
+  readerScroll: {
+    paddingBottom: spacing.xxl,
+  },
+  readerCoverImage: {
+    width: '100%',
+    height: 220,
+    backgroundColor: colors.offWhite,
+  },
+  readerBody: {
+    padding: spacing.lg,
+  },
+  readerMetaRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 12,
+  },
+  readerBadge: {
+    backgroundColor: 'rgba(201, 162, 39, 0.15)',
+    color: colors.gold,
+    fontSize: 11,
+    fontWeight: '700',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 6,
+    textTransform: 'uppercase',
+  },
+  readerMetaText: {
+    fontSize: 12,
+    color: colors.gray,
+  },
+  readerTitle: {
+    fontSize: 22,
+    fontWeight: '800',
+    color: colors.navy,
+    lineHeight: 28,
+    marginBottom: 12,
+  },
+  readerAuthorRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 16,
+  },
+  readerAuthorName: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: colors.navy,
+    marginLeft: 6,
+  },
+  readerDate: {
+    fontSize: 12,
+    color: colors.gray,
+    marginLeft: 4,
+  },
+  readerExcerpt: {
+    fontSize: 15,
+    color: colors.textSecondary,
+    fontStyle: 'italic',
+    lineHeight: 22,
+    borderLeftWidth: 3,
+    borderLeftColor: colors.gold,
+    paddingLeft: 12,
+    marginBottom: 20,
+  },
+  readerDivider: {
+    height: 1,
+    backgroundColor: colors.border,
+    marginBottom: 20,
+  },
+  readerContentText: {
+    fontSize: 15,
+    lineHeight: 24,
+    color: colors.textPrimary,
+    marginBottom: 32,
+  },
+  readerDisclaimerBox: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: colors.offWhite,
+    borderRadius: 12,
+    padding: spacing.md,
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+  readerDisclaimerText: {
+    flex: 1,
+    fontSize: 12,
+    color: colors.gray,
+    lineHeight: 16,
   },
 });

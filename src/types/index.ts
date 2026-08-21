@@ -229,3 +229,21 @@ export interface InvestmentOverview {
   activeInstructionsCount: number;
   holdings: PortfolioHolding[];
 }
+
+export interface BlogPost {
+  id: string;
+  title: string;
+  slug: string;
+  excerpt: string;
+  content: string;
+  coverImageUrl?: string | null;
+  cloudinaryId?: string | null;
+  authorName: string;
+  category: string;
+  tags: string[];
+  isPublished: boolean;
+  readTime: number;
+  publishedAt: string;
+  createdAt: string;
+  updatedAt: string;
+}
