@@ -2,13 +2,17 @@ import Constants from 'expo-constants';
 import { GoogleSignin } from '@react-native-google-signin/google-signin';
 
 export function configureGoogleSignIn() {
-  GoogleSignin.configure({
-    webClientId: Constants.expoConfig?.extra?.googleWebClientId as string,
-    // ^ Must be the Web OAuth client ID, not the Android/iOS one — this is
-    // what lets the backend verify the token against the same audience
-    // configured in GOOGLE_CLIENT_ID on the API.
-    offlineAccess: false,
-  });
+  try {
+    const webClientId = Constants.expoConfig?.extra?.googleWebClientId;
+    if (webClientId) {
+      GoogleSignin.configure({
+        webClientId: webClientId as string,
+        offlineAccess: false,
+      });
+    }
+  } catch (err) {
+    console.warn('Google Sign-In configuration skipped or failed:', err);
+  }
 }
 
 /** Runs the native Google Sign-In flow and returns the ID token to send to the backend. */

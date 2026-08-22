@@ -1,4 +1,4 @@
-import { client } from './client';
+import { apiClient as client } from './client';
 import { BlogPost } from '../types';
 
 export async function fetchLatestBlogPosts(take = 5): Promise<BlogPost[]> {

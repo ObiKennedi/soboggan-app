@@ -1,8 +1,134 @@
+import React, { useEffect, useRef, useState } from 'react';
+import { Animated, Easing, StyleSheet, View, Text } from 'react-native';
+import { colors } from '../theme/theme';
+
 let SplashScreen: any;
 try {
   SplashScreen = require('expo-splash-screen');
 } catch (e) {
   // Safe fallback if expo-splash-screen is missing
+}
+
+interface AnimatedIconProps {
+  size?: number;
+  showText?: boolean;
+}
+
+export function AnimatedIcon({ size = 120, showText = false }: AnimatedIconProps) {
+  const spinValue = useRef(new Animated.Value(0)).current;
+  const scaleValue = useRef(new Animated.Value(1)).current;
+
+  useEffect(() => {
+    // 360-degree continuous rotation for theme blue circling ring
+    const spinAnimation = Animated.loop(
+      Animated.timing(spinValue, {
+        toValue: 1,
+        duration: 1800,
+        easing: Easing.linear,
+        useNativeDriver: true,
+      })
+    );
+
+    // Continuous pulse (bigger and smaller) for logo
+    const pulseAnimation = Animated.loop(
+      Animated.sequence([
+        Animated.timing(scaleValue, {
+          toValue: 1.18,
+          duration: 900,
+          easing: Easing.inOut(Easing.ease),
+          useNativeDriver: true,
+        }),
+        Animated.timing(scaleValue, {
+          toValue: 0.82,
+          duration: 900,
+          easing: Easing.inOut(Easing.ease),
+          useNativeDriver: true,
+        }),
+      ])
+    );
+
+    spinAnimation.start();
+    pulseAnimation.start();
+
+    return () => {
+      spinAnimation.stop();
+      pulseAnimation.stop();
+    };
+  }, [spinValue, scaleValue]);
+
+  const spin = spinValue.interpolate({
+    inputRange: [0, 1],
+    outputRange: ['0deg', '360deg'],
+  });
+
+  const ringSize = size * 1.35;
+  const innerLogoSize = size * 0.75;
+  const badgeFontSize = innerLogoSize * 0.42;
+
+  return (
+    <View style={[styles.outerWrapper, { width: ringSize, height: showText ? ringSize + 40 : ringSize }]}>
+      <View style={[styles.container, { width: ringSize, height: ringSize }]}>
+        {/* Theme Blue Circling Ring */}
+        <Animated.View
+          style={[
+            styles.circlingRing,
+            {
+              width: ringSize,
+              height: ringSize,
+              borderRadius: ringSize / 2,
+              transform: [{ rotate: spin }],
+            },
+          ]}
+        >
+          {/* Glowing orbiting accent dot on the blue ring */}
+          <View
+            style={[
+              styles.orbitDot,
+              {
+                top: 0,
+                left: ringSize / 2 - (ringSize * 0.1) / 2,
+                width: ringSize * 0.1,
+                height: ringSize * 0.1,
+                borderRadius: (ringSize * 0.1) / 2,
+              },
+            ]}
+          />
+        </Animated.View>
+
+        {/* Soft Theme Blue Pulsing Halo */}
+        <Animated.View
+          style={[
+            styles.glowBackground,
+            {
+              width: ringSize * 0.85,
+              height: ringSize * 0.85,
+              borderRadius: (ringSize * 0.85) / 2,
+              transform: [{ scale: scaleValue }],
+            },
+          ]}
+        />
+
+        {/* Pulsing Central Logo (Bigger and Smaller) */}
+        <Animated.View
+          style={[
+            styles.logoContainer,
+            {
+              width: innerLogoSize,
+              height: innerLogoSize,
+              borderRadius: innerLogoSize / 2,
+              transform: [{ scale: scaleValue }],
+            },
+          ]}
+        >
+          <View style={styles.badgeWrap}>
+            <Text style={[styles.badgeLetter, { fontSize: badgeFontSize }]}>S</Text>
+          </View>
+        </Animated.View>
+      </View>
+
+      {showText && <Text style={styles.brandTitle}>SOBOGGAN</Text>}
+    </View>
+  );
 }
 
 export function AnimatedSplashOverlay() {
