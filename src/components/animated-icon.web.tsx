@@ -1,108 +1,227 @@
-import { Image } from 'expo-image';
-import { StyleSheet, View } from 'react-native';
-import Animated, { Keyframe, Easing } from 'react-native-reanimated';
+import React, { useEffect, useRef, useState } from 'react';
+import { Animated, Easing, StyleSheet, View, Text } from 'react-native';
+import { colors } from '../theme/theme';
 
-import classes from './animated-icon.module.css';
-const DURATION = 300;
-
-export function AnimatedSplashOverlay() {
-  return null;
+interface AnimatedIconProps {
+  size?: number;
+  showText?: boolean;
 }
 
-const keyframe = new Keyframe({
-  0: {
-    transform: [{ scale: 0 }],
-  },
-  60: {
-    transform: [{ scale: 1.2 }],
-    easing: Easing.elastic(1.2),
-  },
-  100: {
-    transform: [{ scale: 1 }],
-    easing: Easing.elastic(1.2),
-  },
-});
+export function AnimatedIcon({ size = 120, showText = false }: AnimatedIconProps) {
+  const spinValue = useRef(new Animated.Value(0)).current;
+  const scaleValue = useRef(new Animated.Value(1)).current;
 
-const logoKeyframe = new Keyframe({
-  0: {
-    opacity: 0,
-  },
-  60: {
-    transform: [{ scale: 1.2 }],
-    opacity: 0,
-    easing: Easing.elastic(1.2),
-  },
-  100: {
-    transform: [{ scale: 1 }],
-    opacity: 1,
-    easing: Easing.elastic(1.2),
-  },
-});
+  useEffect(() => {
+    // 360-degree continuous rotation for theme blue circling ring
+    const spinAnimation = Animated.loop(
+      Animated.timing(spinValue, {
+        toValue: 1,
+        duration: 1800,
+        easing: Easing.linear,
+        useNativeDriver: true,
+      })
+    );
 
-const glowKeyframe = new Keyframe({
-  0: {
-    transform: [{ rotateZ: '-180deg' }, { scale: 0.8 }],
-    opacity: 0,
-  },
-  [DURATION / 1000]: {
-    transform: [{ rotateZ: '0deg' }, { scale: 1 }],
-    opacity: 1,
-    easing: Easing.elastic(0.7),
-  },
-  100: {
-    transform: [{ rotateZ: '7200deg' }],
-  },
-});
+    // Continuous pulse (bigger and smaller) for logo
+    const pulseAnimation = Animated.loop(
+      Animated.sequence([
+        Animated.timing(scaleValue, {
+          toValue: 1.18,
+          duration: 900,
+          easing: Easing.inOut(Easing.ease),
+          useNativeDriver: true,
+        }),
+        Animated.timing(scaleValue, {
+          toValue: 0.82,
+          duration: 900,
+          easing: Easing.inOut(Easing.ease),
+          useNativeDriver: true,
+        }),
+      ])
+    );
 
-export function AnimatedIcon() {
+    spinAnimation.start();
+    pulseAnimation.start();
+
+    return () => {
+      spinAnimation.stop();
+      pulseAnimation.stop();
+    };
+  }, [spinValue, scaleValue]);
+
+  const spin = spinValue.interpolate({
+    inputRange: [0, 1],
+    outputRange: ['0deg', '360deg'],
+  });
+
+  const ringSize = size * 1.35;
+  const innerLogoSize = size * 0.75;
+  const badgeFontSize = innerLogoSize * 0.42;
+
   return (
-    <View style={styles.iconContainer}>
-      <Animated.View entering={glowKeyframe.duration(60 * 1000 * 4)} style={styles.glow}>
-        <Image style={styles.glow} source={require('@/assets/images/logo-glow.png')} />
-      </Animated.View>
+    <View style={[styles.outerWrapper, { width: ringSize, height: showText ? ringSize + 40 : ringSize }]}>
+      <View style={[styles.container, { width: ringSize, height: ringSize }]}>
+        {/* Theme Blue Circling Ring */}
+        <Animated.View
+          style={[
+            styles.circlingRing,
+            {
+              width: ringSize,
+              height: ringSize,
+              borderRadius: ringSize / 2,
+              transform: [{ rotate: spin }],
+            },
+          ]}
+        >
+          {/* Glowing orbiting accent dot on the blue ring */}
+          <View
+            style={[
+              styles.orbitDot,
+              {
+                top: 0,
+                left: ringSize / 2 - (ringSize * 0.1) / 2,
+                width: ringSize * 0.1,
+                height: ringSize * 0.1,
+                borderRadius: (ringSize * 0.1) / 2,
+              },
+            ]}
+          />
+        </Animated.View>
 
-      <Animated.View style={styles.background} entering={keyframe.duration(DURATION)}>
-        <div className={classes.expoLogoBackground} />
-      </Animated.View>
+        {/* Soft Theme Blue Pulsing Halo */}
+        <Animated.View
+          style={[
+            styles.glowBackground,
+            {
+              width: ringSize * 0.85,
+              height: ringSize * 0.85,
+              borderRadius: (ringSize * 0.85) / 2,
+              transform: [{ scale: scaleValue }],
+            },
+          ]}
+        />
 
-      <Animated.View style={styles.imageContainer} entering={logoKeyframe.duration(DURATION)}>
-        <Image style={styles.image} source={require('@/assets/images/expo-logo.png')} />
-      </Animated.View>
+        {/* Pulsing Central Logo (Bigger and Smaller) */}
+        <Animated.View
+          style={[
+            styles.logoContainer,
+            {
+              width: innerLogoSize,
+              height: innerLogoSize,
+              borderRadius: innerLogoSize / 2,
+              transform: [{ scale: scaleValue }],
+            },
+          ]}
+        >
+          <View style={styles.badgeWrap}>
+            <Text style={[styles.badgeLetter, { fontSize: badgeFontSize }]}>S</Text>
+          </View>
+        </Animated.View>
+      </View>
+
+      {showText && <Text style={styles.brandTitle}>SOBOGGAN</Text>}
     </View>
   );
 }
 
+export function AnimatedSplashOverlay() {
+  const [visible, setVisible] = useState(true);
+  const fadeAnim = useRef(new Animated.Value(1)).current;
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      Animated.timing(fadeAnim, {
+        toValue: 0,
+        duration: 450,
+        useNativeDriver: true,
+      }).start(() => setVisible(false));
+    }, 1200);
+
+    return () => clearTimeout(timer);
+  }, [fadeAnim]);
+
+  if (!visible) return null;
+
+  return (
+    <Animated.View style={[styles.splashOverlay, { opacity: fadeAnim }]}>
+      <AnimatedIcon size={120} showText />
+    </Animated.View>
+  );
+}
+
 const styles = StyleSheet.create({
+  outerWrapper: {
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   container: {
     alignItems: 'center',
-    width: '100%',
-    zIndex: 1000,
-    position: 'absolute',
-    top: 128 / 2 + 138,
-  },
-  imageContainer: {
     justifyContent: 'center',
-    alignItems: 'center',
+    position: 'relative',
   },
-  glow: {
-    width: 201,
-    height: 201,
+  circlingRing: {
     position: 'absolute',
+    borderWidth: 4,
+    borderColor: 'transparent',
+    borderTopColor: '#0274DF',
+    borderRightColor: '#3C9FFE',
+    borderBottomColor: 'rgba(2, 116, 223, 0.15)',
+    borderLeftColor: '#0A84FF',
+    shadowColor: '#0274DF',
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0.6,
+    shadowRadius: 10,
+    elevation: 4,
   },
-  iconContainer: {
+  orbitDot: {
+    position: 'absolute',
+    backgroundColor: '#3C9FFE',
+    shadowColor: '#3C9FFE',
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0.95,
+    shadowRadius: 8,
+    elevation: 6,
+  },
+  glowBackground: {
+    position: 'absolute',
+    backgroundColor: 'rgba(2, 116, 223, 0.12)',
+    borderWidth: 1,
+    borderColor: 'rgba(60, 159, 254, 0.3)',
+  },
+  logoContainer: {
+    alignItems: 'center',
     justifyContent: 'center',
+    backgroundColor: colors.navy || '#0F1F3D',
+    shadowColor: '#0274DF',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.45,
+    shadowRadius: 12,
+    elevation: 8,
+    borderWidth: 2.5,
+    borderColor: '#3C9FFE',
+  },
+  badgeWrap: {
     alignItems: 'center',
-    width: 128,
-    height: 128,
+    justifyContent: 'center',
   },
-  image: {
-    position: 'absolute',
-    width: 76,
-    height: 71,
+  badgeLetter: {
+    color: colors.gold || '#C9A227',
+    fontWeight: '800',
+    letterSpacing: 1,
   },
-  background: {
-    width: 128,
-    height: 128,
-    position: 'absolute',
+  brandTitle: {
+    marginTop: 18,
+    color: colors.navy || '#0F1F3D',
+    fontSize: 16,
+    fontWeight: '700',
+    letterSpacing: 3,
+  },
+  splashOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: colors.white || '#FFFFFF',
+    alignItems: 'center',
+    justifyContent: 'center',
+    zIndex: 9999,
   },
 });
+
